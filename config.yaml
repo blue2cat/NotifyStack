@@ -1,0 +1,21 @@
+broker:
+  type: rabbitmq
+  host: ${RABBITMQ_HOST}
+  port: ${RABBITMQ_PORT}
+  username: ${RABBITMQ_DEFAULT_USER}
+  password: ${RABBITMQ_DEFAULT_PASS}
+  vhost: ${RABBITMQ_DEFAULT_VHOST}
+
+inputs:
+  - type: smtp
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    credentials:
+      user1@example.com: securepassword123
+      user2@example.com: anothersecurepassword
+
+outputs:
+  - type: webhook
+    url: ${WEBHOOK_URL}
