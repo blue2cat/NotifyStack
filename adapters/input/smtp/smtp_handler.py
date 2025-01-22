@@ -4,6 +4,8 @@ from classes.input.smtp_input_message import SMTPInputMessage
 from classes.queue_types import QueueType
 from classes.message_types import MessageType, MessageReceiver
 from logger import Logger
+import email
+from email.message import EmailMessage
 
 
 class SMTPHandler:
@@ -42,7 +44,9 @@ class SMTPHandler:
         Handles the initial connection.
         """
         self.logger.debug(f"Client connected: {session.peer}")
-        return f'220 {self.host} SMTP ready'
+        # Return None for a successful connection or a generic SMTP 220 message
+        return None
+
 
     async def handle_AUTH(self, server, session, envelope, mechanism, auth_data):
         """
@@ -87,24 +91,45 @@ class SMTPHandler:
 
         return '250 OK'
 
+
     async def handle_DATA(self, server, session, envelope):
         """
         Handles the DATA command and logs the email content.
         """
         self.logger.debug(f"Received email from {envelope.mail_from} to {envelope.rcpt_tos}")
 
-        # Create an SMTPInputMessage object
-        email_data = SMTPInputMessage(
-            messageType=MessageType.INPUT,
-            messageReceiver=MessageReceiver.PROCESSOR,
-            sender=envelope.mail_from,
-            recipient=envelope.rcpt_tos,
-            subject=envelope.content.get('subject', 'No Subject'),
-            body=envelope.content.get('body', ''),
-        )
+        try:
+            # Parse the raw content
+            message = email.message_from_bytes(envelope.content)
 
-        # Publish the email data to the processing queue
-        self.logger.debug(f"Publishing email data to the processing queue: {email_data.dict()}")
-        self.logger.info(f"Email received from {envelope.mail_from} to {envelope.rcpt_tos}, publishing to processing queue.")
-        self.broker.publish(queue=QueueType.PROCESSING, message=email_data)
-        return '250 Message accepted for delivery'
+            # Extract the subject
+            subject = message["subject"] if "subject" in message else "No Subject"
+
+            # Extract the body
+            body = ""
+            if message.is_multipart():
+                for part in message.walk():
+                    if part.get_content_type() == "text/plain":
+                        body = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8")
+            else:
+                body = message.get_payload(decode=True).decode(message.get_content_charset() or "utf-8")
+
+            # Create an SMTPInputMessage object
+            email_data = SMTPInputMessage(
+                messageType=MessageType.INPUT,
+                messageReceiver=MessageReceiver.PROCESSOR,
+                sender=envelope.mail_from,
+                recipient=envelope.rcpt_tos,
+                subject=subject,
+                body=body,
+            )
+
+            # Publish the email data to the processing queue
+            self.logger.debug(f"Publishing email data to the processing queue: {email_data.dict()}")
+            self.logger.info(f"Email received from {envelope.mail_from} to {envelope.rcpt_tos}, publishing to processing queue.")
+            self.broker.publish(queue="processor", message=email_data)
+            return '250 Message accepted for delivery'
+
+        except Exception as e:
+            self.logger.error(f"Error while processing email: {e}")
+            return '550 Could not process the message'

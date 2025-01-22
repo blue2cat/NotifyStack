@@ -16,7 +16,7 @@ class SMTPInputMessage(BaseMessage):
     - attachments: List of file paths representing attachments.
     """
     sender: EmailStr
-    recipient: EmailStr
+    recipient: List[EmailStr]
     subject: str
     body: str
     metadata: Optional[Dict[str, str]] = Field(default_factory=dict)

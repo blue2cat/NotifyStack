@@ -34,15 +34,27 @@ class MessageBroker:
         :param message: Message dictionary to publish
         """
         try:
+            # Declare the queue if it doesn't exist
             self.channel.queue_declare(queue=queue, durable=True)
+
+            # Publish the message to the queue
             self.channel.basic_publish(
+
+                # Set direct exchange
                 exchange='',
+
+                # Set routing key to queue name
                 routing_key=queue,
-                body=json.dumps(message),
+
+                # Set message properties
+                body=message.to_json(),
+
+                # Set message as persistent
                 properties=pika.BasicProperties(
-                    delivery_mode=2  # Make the message persistent
+                    delivery_mode=2
                 )
             )
+            
             self.logger.info(f"Message published to queue '{queue}': {message}")
         except Exception as e:
             self.logger.error(f"Failed to publish message to queue '{queue}': {e}")

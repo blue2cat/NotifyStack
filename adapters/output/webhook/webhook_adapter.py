@@ -1,5 +1,3 @@
-import requests
-from core.message import Message
 from core.message_broker import MessageBroker
 
 class WebhookAdapter:

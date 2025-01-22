@@ -55,10 +55,10 @@ def start_adapters(config, broker):
             smtp_adapter.start()
 
     # Start output adapters
-    for output_adapter in config["outputs"]:
-        if output_adapter["type"] == "webhook":
-            webhook_adapter = WebhookAdapter(config=output_adapter, broker=broker)
-            asyncio.create_task(webhook_adapter.start())
+    # for output_adapter in config["outputs"]:
+    #     if output_adapter["type"] == "webhook":
+    #         webhook_adapter = WebhookAdapter(config=output_adapter, broker=broker)
+    #         asyncio.create_task(webhook_adapter.start())
 
 
 if __name__ == "__main__":

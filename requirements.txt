@@ -5,3 +5,4 @@ pika
 aiosmtpd
 loguru
 pydantic
+pydantic[email]

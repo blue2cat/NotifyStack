@@ -47,8 +47,6 @@ class Processor:
         for output in self.outputs:
             if output["type"] == "webhook":
                 self.route_to_webhook(output, message)
-            elif output["type"] == "twilio":
-                self.route_to_twilio(output, message)
 
     def route_to_webhook(self, config: dict, message: Message):
         """
@@ -58,16 +56,6 @@ class Processor:
         """
         queue_name = "webhook_notifications"
         print(f"Routing message to webhook queue: {queue_name}")
-        self.broker.publish(queue=queue_name, message=message.dict())
-
-    def route_to_twilio(self, config: dict, message: Message):
-        """
-        Publishes the message to the Twilio queue.
-        :param config: Twilio configuration
-        :param message: Enriched Message object
-        """
-        queue_name = "twilio_notifications"
-        print(f"Routing message to Twilio queue: {queue_name}")
         self.broker.publish(queue=queue_name, message=message.dict())
 
     def process(self, raw_message: dict):

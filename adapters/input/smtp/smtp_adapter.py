@@ -1,7 +1,7 @@
 from aiosmtpd.controller import Controller
 from core.message_broker import MessageBroker
 from logger import Logger
-from smtp_handler import SMTPHandler
+from .smtp_handler import SMTPHandler
 
 class SMTPAdapter:
     """
@@ -38,7 +38,7 @@ class SMTPAdapter:
         smtp_handler = SMTPHandler(self.broker, self.config)
         
         try:
-            self.controller = Controller(smtp_handler, hostname=host, port=port)
+            self.controller = Controller(smtp_handler, hostname="", port=port)
             self.controller.start()
             self.logger.info(f"SMTP server started on port {port}.")
         except Exception as e:
