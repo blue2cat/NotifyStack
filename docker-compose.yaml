@@ -6,7 +6,7 @@ services:
     container_name: notifystack-dev
     command: python main.py
     volumes:
-      - .:/app  # Mount the local code into the container for live updates
+      - .:/app
     environment:
       - PYTHONUNBUFFERED=1
       - RABBITMQ_HOST=rabbitmq
@@ -16,19 +16,19 @@ services:
     depends_on:
       - rabbitmq
     ports:
-      - "587:587"  # Expose SMTP port for testing
+      - "587:587"
     restart: 
       unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq-dev
+    container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"  # RabbitMQ messaging port
-      - "15672:15672"  # RabbitMQ management console
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 

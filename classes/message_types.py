@@ -5,13 +5,16 @@ class MessageType(Enum):
     INPUT = "input"
     OUTPUT = "output"
 
-class MessageReceiver(Enum):
+class MessageAdapter(Enum):
     """Enum for the different types of receivers."""
     # input
     EMAIL = "email"
 
     # processing 
     PROCESSOR = "processor"
+
+    # storage
+    DATABASE = "database"
 
     # output
     WEBHOOK = "webhook"

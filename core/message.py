@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
-from classes.message_types import MessageType, MessageReceiver
+from classes.message_types import MessageType, MessageAdapter
 
 class BaseMessage(BaseModel):
     """
@@ -14,7 +14,8 @@ class BaseMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: datetime = Field(default_factory=datetime.now)
     messageType: MessageType
-    messageReceiver: MessageReceiver
+    messageSender: MessageAdapter
+    messageReceiver: MessageAdapter
 
     def __str__(self):
         return f"{self.__class__.__name__} - {self.id}"

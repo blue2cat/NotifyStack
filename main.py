@@ -1,18 +1,17 @@
 import os
 import asyncio
+import signal
 from dotenv import load_dotenv
 import yaml
 from core.message_broker import MessageBroker
 from adapters.input.smtp.smtp_adapter import SMTPAdapter
-from adapters.output.webhook.webhook_adapter import WebhookAdapter
+from core.processor import Processor
+
 
 def load_config():
     """
     Loads the YAML configuration and resolves placeholders using environment variables.
-    :return: Parsed configuration dictionary.
     """
-
-    # Attempt to load the configuration file
     try:
         with open("config.yaml", "r") as file:
             config = yaml.safe_load(file)
@@ -23,14 +22,12 @@ def load_config():
         print(f"Error parsing the config file: {e}")
         exit(1)
 
-    # Resolve environment variable placeholders
     def resolve_env(value):
         if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
             env_var = value[2:-1]
             return os.getenv(env_var, f"Missing env var: {env_var}")
         return value
 
-    # Recursively resolve placeholders in the configuration
     def resolve_recursive(obj):
         if isinstance(obj, dict):
             return {k: resolve_recursive(v) for k, v in obj.items()}
@@ -47,29 +44,39 @@ def start_adapters(config, broker):
     Initializes and starts all adapters based on the configuration.
     :param config: The loaded configuration dictionary.
     :param broker: Instance of the message broker.
+    :param processor: Instance of the Processor.
     """
-    # Start input adapters
-    for input_adapter in config["inputs"]:
-        if input_adapter["type"] == "smtp":
-            smtp_adapter = SMTPAdapter(config=input_adapter, broker=broker)
-            smtp_adapter.start()
+    input_tasks = []
 
-    # Start output adapters
-    # for output_adapter in config["outputs"]:
-    #     if output_adapter["type"] == "webhook":
-    #         webhook_adapter = WebhookAdapter(config=output_adapter, broker=broker)
-    #         asyncio.create_task(webhook_adapter.start())
+    for input_adapter in config["inputs"]:
+        if input_adapter["type"].match("smtp*"):
+            smtp_adapter = SMTPAdapter(config=input_adapter, broker=broker,)
+            input_tasks.append(asyncio.create_task(smtp_adapter.start()))
+
+    return input_tasks
+
+
+async def shutdown(signal, loop, tasks):
+    """
+    Gracefully shutdown all adapters and the event loop.
+    :param signal: The signal received (e.g., SIGINT).
+    :param loop: The asyncio event loop.
+    :param tasks: The list of tasks to cancel.
+    """
+    print(f"Received exit signal {signal.name}... Shutting down.")
+    for task in tasks:
+        task.cancel()
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+    loop.stop()
 
 
 if __name__ == "__main__":
-    # Load environment variables and configuration
     load_dotenv()
     config = load_config()
 
-    # RabbitMQ message broker configuration
+    # Initialize Message Broker
     broker_config = config["broker"]
-
-    # Initialize the message broker
     broker = MessageBroker(
         host=broker_config["host"],
         port=int(broker_config["port"]),
@@ -77,10 +84,23 @@ if __name__ == "__main__":
         password=broker_config["password"]
     )
 
+    # Initialize Processor
+    processor = Processor(config["outputs"], config["routes"], broker)
+
+    # Start NotifyStack
     try:
+        loop = asyncio.get_event_loop()
+
         # Start adapters
-        start_adapters(config, broker)
+        adapter_tasks = start_adapters(config, broker)
+
+        # Handle shutdown signals
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s, loop, adapter_tasks)))
+
         print("NotifyStack is running. Press Ctrl+C to stop.")
-        asyncio.get_event_loop().run_forever()
-    except KeyboardInterrupt:
+        loop.run_forever()
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
         print("\nShutting down NotifyStack...")

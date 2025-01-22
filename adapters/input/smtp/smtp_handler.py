@@ -1,7 +1,6 @@
 from aiosmtpd.smtp import AuthResult, LoginPassword
 from core.message_broker import MessageBroker
 from classes.input.smtp_input_message import SMTPInputMessage
-from classes.queue_types import QueueType
 from classes.message_types import MessageType, MessageReceiver
 from logger import Logger
 import email
@@ -21,23 +20,18 @@ class SMTPHandler:
         """
         self.logger = Logger.get_logger()
         self.broker = broker
-        self.host = config.get("host", "localhost")
-        self.port = config.get("port", 25)
+        self.host = config.get("host", "")
+        self.port = config.get("port", 587)
         self.use_credentials = config.get("authentication", False)
         self.auth_type = config.get("auth_type", "plain")
         self.valid_credentials = {
             cred["email"]: cred["password"]
             for cred in config.get("credentials", [])
         }
-        self.use_tls = config.get("tls", True)
-        self.allow_relay = config.get("allow_relay", False)
+
         self.authenticated_sessions = set()
 
-        self.logger.debug(
-            f"SMTPHandler initialized with host={self.host}, port={self.port}, "
-            f"use_credentials={self.use_credentials}, use_tls={self.use_tls}, "
-            f"allow_relay={self.allow_relay}"
-        )
+        self.logger.debug(f"SMTPHandler initialized with settings: {self.host}:{self.port}")
 
     async def handle_CONNECT(self, server, session, envelope):
         """
