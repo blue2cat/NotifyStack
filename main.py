@@ -3,17 +3,25 @@ import asyncio
 from dotenv import load_dotenv
 import yaml
 from core.message_broker import MessageBroker
-from adapters.input.smtp_adapter import SMTPAdapter
-from adapters.output.webhook_adapter import WebhookAdapter
-
+from adapters.input.smtp.smtp_adapter import SMTPAdapter
+from adapters.output.webhook.webhook_adapter import WebhookAdapter
 
 def load_config():
     """
     Loads the YAML configuration and resolves placeholders using environment variables.
     :return: Parsed configuration dictionary.
     """
-    with open("config.yaml", "r") as file:
-        config = yaml.safe_load(file)
+
+    # Attempt to load the configuration file
+    try:
+        with open("config.yaml", "r") as file:
+            config = yaml.safe_load(file)
+    except FileNotFoundError:
+        print("Config file not found. Please ensure a 'config.yaml' file exists in the root directory.")
+        exit(1)
+    except yaml.YAMLError as e:
+        print(f"Error parsing the config file: {e}")
+        exit(1)
 
     # Resolve environment variable placeholders
     def resolve_env(value):
@@ -22,6 +30,7 @@ def load_config():
             return os.getenv(env_var, f"Missing env var: {env_var}")
         return value
 
+    # Recursively resolve placeholders in the configuration
     def resolve_recursive(obj):
         if isinstance(obj, dict):
             return {k: resolve_recursive(v) for k, v in obj.items()}

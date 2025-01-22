@@ -1,7 +1,6 @@
 import os
-from core.message_schema import Message
+from core.message import Message
 from core.message_broker import MessageBroker
-
 
 class Processor:
     """
