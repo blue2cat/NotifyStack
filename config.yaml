@@ -10,12 +10,7 @@ inputs:
   - type: smtp
     host: ${SMTP_HOST}             # Hostname or IP address of the SMTP server
     port: ${SMTP_PORT}             # Port number
-    authentication: false           # Toggle authentication on/off
-    credentials:                   # Optional: Per-user credentials
-      - email: user1@example.com
-        password: securepassword123
-      - email: user2@example.com
-        password: anothersecurepassword
+    authentication: false          # Toggle authentication on/off
     tls: true                      # Toggle TLS/SSL support
 
 outputs:
