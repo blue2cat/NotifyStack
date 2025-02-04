@@ -4,13 +4,14 @@ services:
   # RabbitMQ Broker
   rabbitmq:
     image: "rabbitmq:3-management"
-    container_name: "rabbitmq_broker"
+    container_name: "rabbitmq"
     ports:
       - "5672:5672"  # AMQP protocol
       - "15672:15672"  # Management UI
     environment:
       RABBITMQ_DEFAULT_USER: {RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: {RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: {RABBITMQ_DEFAULT_VHOST}
     restart: always
 
   # Database
