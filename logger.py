@@ -2,10 +2,16 @@ import logging
 import os
 
 class Logger:
+    """
+    Global static logger class used to log messages across the application
+    """
     _logger = None
 
     @staticmethod
     def get_logger():
+        """
+        Return a logger instance
+        """
         if Logger._logger is None:
             Logger._logger = logging.getLogger("NotifyStack")
             Logger._logger.setLevel(logging.DEBUG)
@@ -30,5 +36,5 @@ class Logger:
                 )
                 file_handler.setFormatter(file_formatter)
                 Logger._logger.addHandler(file_handler)
-
         return Logger._logger
+    

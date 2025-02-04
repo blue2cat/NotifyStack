@@ -4,16 +4,15 @@ import signal
 from dotenv import load_dotenv
 import yaml
 from core.message_broker import MessageBroker
-from adapters.input.smtp.smtp_adapter import SMTPAdapter
 from core.processor import Processor
-
+from adapters.input.smtp.smtp_adapter import SMTPAdapter
 
 def load_config():
     """
     Loads the YAML configuration and resolves placeholders using environment variables.
     """
     try:
-        with open("config.yaml", "r") as file:
+        with open("config.yaml", "r", encoding="utf-8") as file:
             config = yaml.safe_load(file)
     except FileNotFoundError:
         print("Config file not found. Please ensure a 'config.yaml' file exists in the root directory.")
@@ -38,8 +37,7 @@ def load_config():
 
     return resolve_recursive(config)
 
-
-def start_adapters(config, broker):
+def start_adapters(adapter_config, message_broker):
     """
     Initializes and starts all adapters based on the configuration.
     :param config: The loaded configuration dictionary.
@@ -48,22 +46,22 @@ def start_adapters(config, broker):
     """
     input_tasks = []
 
-    for input_adapter in config["inputs"]:
+    for input_adapter in adapter_config["inputs"]:
         if input_adapter["type"].match("smtp*"):
-            smtp_adapter = SMTPAdapter(config=input_adapter, broker=broker,)
+            smtp_adapter = SMTPAdapter(config=input_adapter, broker=message_broker,)
             input_tasks.append(asyncio.create_task(smtp_adapter.start()))
 
     return input_tasks
 
 
-async def shutdown(signal, loop, tasks):
+async def shutdown(sig, loop, tasks):
     """
     Gracefully shutdown all adapters and the event loop.
     :param signal: The signal received (e.g., SIGINT).
     :param loop: The asyncio event loop.
     :param tasks: The list of tasks to cancel.
     """
-    print(f"Received exit signal {signal.name}... Shutting down.")
+    print(f"Received exit signal {sig.name}... Shutting down.")
     for task in tasks:
         task.cancel()
 
@@ -75,7 +73,6 @@ if __name__ == "__main__":
     load_dotenv()
     config = load_config()
 
-    # Initialize Message Broker
     broker_config = config["broker"]
     broker = MessageBroker(
         host=broker_config["host"],
@@ -96,11 +93,12 @@ if __name__ == "__main__":
 
         # Handle shutdown signals
         for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s, loop, adapter_tasks)))
+            loop.add_signal_handler(sig, lambda s=sig:
+                                     asyncio.create_task(shutdown(s, loop, adapter_tasks)))
 
         print("NotifyStack is running. Press Ctrl+C to stop.")
         loop.run_forever()
-    except Exception as e:
+    except (OSError, asyncio.CancelledError, yaml.YAMLError) as e:
         print(f"Error: {e}")
     finally:
         print("\nShutting down NotifyStack...")
