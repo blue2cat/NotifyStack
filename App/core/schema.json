@@ -1,0 +1,46 @@
+{
+  "title": "Notification",
+  "type": "object",
+  "required": ["source", "from", "to", "subject", "body"],
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": ["smtp", "http", "api"]
+    },
+    "receivedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "from": { "type": "string" },
+    "to": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "subject": { "type": "string" },
+    "body": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "html": { "type": "string" }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename", "contentType", "size"],
+        "properties": {
+          "filename": { "type": "string" },
+          "contentType": { "type": "string" },
+          "size": { "type": "number" },
+          "content": { "type": "string", "contentEncoding": "base64" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
